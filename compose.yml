@@ -1,35 +1,29 @@
-x-logging:
-  service: &default-logging
-    logging:
-      options:
-        max-size: "10m"
-        max-file: "3"
+x-logging: &default-logging
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
 
 services:
-
   redis:
     <<: *default-logging
     image: redis:latest
-    user: root
-    environment:
-      REDIS_PASSWORD: 'password'
-    command: redis-server --requirepass ${REDIS_PASSWORD} --loglevel warning
-    ports:
-      - "6379:6379"
+    command: redis-server --requirepass password --loglevel warning
     volumes:
-      - ./redis_data:/data:Z
+      - ./redis_data:/data
     restart: unless-stopped
 
   postgres:
     <<: *default-logging
-    image: postgres:latest
+    image: postgres:18-alpine
     environment:
-      - DB_USER=gitlab
-      - DB_PASS=password
-      - DB_NAME=gitlab_production
-      - DB_EXTENSION=pg_trgm,btree_gist
+      POSTGRES_USER: gitlab
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gitlab
     volumes:
-      - ./postgresql_data:/var/lib/postgresql:Z
+      - ./postgresql_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     restart: unless-stopped
 
   gitlab:
@@ -38,23 +32,21 @@ services:
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://gitlab.local:8800'
+        # Настройки внешней БД
         postgresql['enable'] = false
-        redis['enable'] = false
-        nginx['listen_https'] = false
-        gitlab_rails['gitlab_shell_ssh_port'] = 2200
-        gitlab_rails['initial_root_password'] = 'password'
         gitlab_rails['db_adapter'] = 'postgresql'
-        gitlab_rails['db_encoding'] = 'utf8'
         gitlab_rails['db_host'] = 'postgres'
         gitlab_rails['db_username'] = 'gitlab'
         gitlab_rails['db_password'] = 'password'
-        gitlab_rails['db_database'] = 'gitlabhq_production'
-        gitlab_rails['auto_migrate'] = true
-        gitlab_rails['install_db'] = true
-        gitlab_rails['db_initialize'] = true
+        gitlab_rails['db_database'] = 'gitlab'
+        # Настройки внешнего Redis
+        redis['enable'] = false
         gitlab_rails['redis_host'] = 'redis'
-        gitlab_rails['redis_port'] = '6379'
+        gitlab_rails['redis_port'] = 6379
         gitlab_rails['redis_password'] = 'password'
+        # SSH и порты
+        gitlab_rails['gitlab_shell_ssh_port'] = 2200
+        nginx['listen_port'] = 8800
     ports:
       - "2200:22"
       - "8800:80"
@@ -62,6 +54,7 @@ services:
       - ./gitlab_config:/etc/gitlab
       - ./gitlab_logs:/var/log/gitlab
       - ./gitlab_data:/var/opt/gitlab
+    depends_on:
+      - postgres
+      - redis
     restart: unless-stopped
-
-
