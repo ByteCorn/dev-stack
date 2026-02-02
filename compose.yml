@@ -49,7 +49,7 @@ services:
         nginx['listen_port'] = 8800
     ports:
       - "2200:22"
-      - "8800:80"
+      - "8800:8800"
     volumes:
       - ./gitlab_config:/etc/gitlab
       - ./gitlab_logs:/var/log/gitlab
