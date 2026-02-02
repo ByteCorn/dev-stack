@@ -20,9 +20,9 @@ services:
       - ./redis_data:/data:Z
     restart: unless-stopped
 
-  postgresql:
+  postgres:
     <<: *default-logging
-    image: postgresql:latest
+    image: postgres:latest
     environment:
       - DB_USER=gitlab
       - DB_PASS=password
@@ -46,7 +46,7 @@ services:
         gitlab_rails['initial_root_password'] = 'password'
         gitlab_rails['db_adapter'] = 'postgresql'
         gitlab_rails['db_encoding'] = 'utf8'
-        gitlab_rails['db_host'] = 'postgresql'
+        gitlab_rails['db_host'] = 'postgres'
         gitlab_rails['db_username'] = 'gitlab'
         gitlab_rails['db_password'] = 'password'
         gitlab_rails['db_database'] = 'gitlabhq_production'
