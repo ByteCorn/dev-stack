@@ -58,3 +58,14 @@ services:
       - postgres
       - redis
     restart: unless-stopped
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ./gitlab_runner_config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - gitlab
+    restart: unless-stopped
