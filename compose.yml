@@ -1,22 +1,13 @@
-x-logging: &default-logging
-  logging:
-    driver: "json-file"
-    options:
-      max-size: "10m"
-      max-file: "3"
-
 x-logging-gelf: &gelf-logging
-  extra_hosts:
-    - "host.docker.internal:host-gateway"
   logging:
     driver: gelf
     options:
-      gelf-address: "udp://host.docker.internal:12201" # Graylog порт из стека логирования
-      tag: "monitoring-{{.Name}}" # автоматически добавит имя контейнера в тег
+      gelf-address: "udp://172.17.0.1:12201" # Graylog порт из стека логирования
+      tag: "dev-{{.Name}}" # автоматически добавит имя контейнера в тег
 
 services:
   redis:
-    <<: *default-logging
+    <<: *gelf-logging
     image: redis:latest
     command: redis-server --requirepass password --loglevel warning
     volumes:
