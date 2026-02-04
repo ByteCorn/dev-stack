@@ -5,6 +5,15 @@ x-logging: &default-logging
       max-size: "10m"
       max-file: "3"
 
+x-logging-gelf: &gelf-logging
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  logging:
+    driver: gelf
+    options:
+      gelf-address: "udp://host.docker.internal:12201" # Graylog порт из стека логирования
+      tag: "monitoring-{{.Name}}" # автоматически добавит имя контейнера в тег
+
 services:
   redis:
     <<: *default-logging
@@ -15,7 +24,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    <<: *default-logging
+    <<: *gelf-logging
     image: postgres:18-alpine
     environment:
       POSTGRES_USER: gitlab
@@ -27,7 +36,7 @@ services:
     restart: unless-stopped
 
   gitlab:
-    <<: *default-logging
+    <<: *gelf-logging
     image: gitlab/gitlab-ce:latest
     environment:
       GITLAB_OMNIBUS_CONFIG: |
@@ -60,6 +69,7 @@ services:
     restart: unless-stopped
 
   gitlab-runner:
+    <<: *gelf-logging
     image: gitlab/gitlab-runner:latest
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
